@@ -3,6 +3,7 @@ const registry = require('registry.js');
 const addUserDialog = require('dialogs/add-user.js');
 const removeUserDialog = require('dialogs/remove-user.js');
 const infoDialog = require('dialogs/user-info.js');
+const genericResponse = require('controllers/dialog/generic-response.js');
 
 const commands = {
     list: listUsers,
@@ -35,13 +36,10 @@ function listUsers (params, callback) {
     			});
             });
             
-            callback(null, JSON.stringify({
-                response_type: 'in_channel',
-                blocks: [{
-            		type: 'section',
-            		fields: fields
-            	}]
-            }), false);
+            genericResponse([{
+        		type: 'section',
+        		fields: fields
+        	}], params.response_url, callback);
         }
     );
 }

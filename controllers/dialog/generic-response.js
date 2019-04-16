@@ -32,7 +32,7 @@ module.exports = (text, response_url, callback) => {
     }
     
     const req = http.request(options, () => {
-        callback(null,null, false);
+        callback(null, null, false);
     });
     req.write(stringData);
     req.end();

@@ -43,7 +43,6 @@ module.exports = (payload, callback) => {
                 genericResponse(err, payload.response_url, callback);
                 return;
             }
-            let fields = [];
             
             if (!data.length) {
                 genericResponse('Error: There are no users in the raffle pool for this channel', payload.response_url, callback);

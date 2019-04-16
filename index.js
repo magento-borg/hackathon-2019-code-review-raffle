@@ -53,6 +53,7 @@ exports.handler = (event, context, callback) => {
                 'Content-Type': 'application/json',
             },
         });
+        
     };
 
     if (token) {

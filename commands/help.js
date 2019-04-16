@@ -1,4 +1,5 @@
 'use strict';
+const genericResponse = require('controllers/dialog/generic-response.js');
 
 module.exports = (params, callback, isError) => {
     const message = `Usage: \`${params.command} <registry|review|help>\``;
@@ -9,10 +10,7 @@ module.exports = (params, callback, isError) => {
         return;
     }
     
-    callback(null, JSON.stringify({
-        text: message,
-        blocks: getMenu(message)
-    }), false);
+    genericResponse(getMenu(message), params.response_url, callback);
 };
 
 

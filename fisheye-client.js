@@ -1,11 +1,96 @@
 'use strict';
 
-const jiraUser = process.env.jiraUsername;
-const jiraPwd = process.env.jiraPassword;
+const config = require('config');
 const http = require('https');
+const parseXmlString = require('xml2js').parseString;
+const base64string = Buffer.from(`${config.jiraUsername}:${config.jiraPassword}`).toString('base64');
+
+exports.getFisheyeReviewers = (reviewId, callback) => {
+    const options = {
+        hostname: 'fisheye.corp.magento.com',
+        path: `/rest-service/reviews-v1/${reviewId}/reviewers`,
+        port: 443,
+        method: 'GET',
+        headers: {
+            'Authorization': `Basic ${base64string}`
+        }
+    };
+
+    let data = '';
+    const req = http.request(options, function (res) {
+        res.on('data', (d) => {
+           data += d; 
+        });
+        res.on('end', () => {
+            parseXmlString(data, function (err, result) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                if (result.message && result.message[0]) {
+                    callback(result.message[0]);
+                    return;
+                }
+                
+                if (!result.reviewers.reviewer) {
+                    callback(null, []);
+                    return;
+                }
+                
+                callback(null, result.reviewers.reviewer.map((reviewer) => reviewer.userName[0]));
+            });
+        });
+        
+    });
+    
+    req.on('error', (error) => {
+        callback(error);
+    });
+    req.write('');
+    req.end();
+};
+
+exports.getFisheyeAuthor = (reviewId, callback) => {
+    const options = {
+        hostname: 'fisheye.corp.magento.com',
+        path: `/rest-service/reviews-v1/${reviewId}`,
+        port: 443,
+        method: 'GET',
+        headers: {
+            'Authorization': `Basic ${base64string}`
+        }
+    };
+
+    let data = '';
+    const req = http.request(options, function (res) {
+        res.on('data', (d) => {
+           data += d; 
+        });
+        res.on('end', () => {
+            parseXmlString(data, function (err, result) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                if (result.message && result.message[0]) {
+                    callback(result.message[0]);
+                    return;
+                }
+                callback(null, result.reviewData.author[0].userName[0]);
+            });
+        });
+        
+    });
+    
+    req.on('error', (error) => {
+        callback(error);
+    });
+    req.write('');
+    req.end();
+
+};
 
 exports.addFisheyeReviewer = (fisheyeUsername, reviewId, callback) => {
-    const base64string = Buffer.from(`${jiraUser}:${jiraPwd}`).toString('base64');
     const options = {
         hostname: 'fisheye.corp.magento.com',
         path: `/rest-service/reviews-v1/${reviewId}/reviewers`,
@@ -23,19 +108,23 @@ exports.addFisheyeReviewer = (fisheyeUsername, reviewId, callback) => {
            data += d; 
         });
         res.on('end', () => {
-           // 204 returned is success, however crucible doesn't return any other information
             if (res.statusCode === 204) {
                 callback(null, `https://fisheye.corp.magento.com/cru/${reviewId}`);
                 return;
             }
             
-            // xml regex matching. Oh yea.
-            const errors = data.match(/<message>(.*)<\/message>/);
-            if (errors && errors[1]) {
-                callback(errors[1]);
-            } else {
-                callback(data);
-            }
+            parseXmlString(data, function (err, result) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                if (result.message && result.message[0]) {
+                    callback(result.message[0]);
+                    return;
+                }
+                callback(null, result);
+            });
+            
         });
         
     });
